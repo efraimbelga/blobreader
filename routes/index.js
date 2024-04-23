@@ -25,15 +25,13 @@ router.post("/login", function (req, res) {
     key: req.body.key,
   };
   res.cookie("user", user, { maxAge: 180000 });
-  const referer = req.headers.referer;
-  const params = referer.split("?")[1];
-  res.redirect("/api/blob/?" + params);
+  const referer = new URL(req.headers.referer);
+  const params = new URLSearchParams(referer.search);
+  res.redirect(`/api/blob/?${params}`);
 });
 
 router.get("/blob/", function (request, response) {
-  console.log(request.query);
   const { url, token } = request.query;
-
   if (url && token) {
     sasURL = url;
     sasToken = token;
@@ -48,10 +46,9 @@ router.get("/blob/", function (request, response) {
       return;
     }
 
-    main(sasURL, sasToken, user.account)
+    main(sasURL, sasToken)
       .then((data) => response.send(data))
       .catch((error) =>
-        //  response.send(error)
         response.render("error", {
           title: error.name,
           message: error.message || error.details.errorCode,
@@ -65,12 +62,14 @@ router.get("/blob/", function (request, response) {
   }
 });
 
-async function main(sasURL, sasToken, account) {
+async function main(sasURL, sasToken) {
   try {
-    const ACCOUNT = "genaistorageaccount02";
-    const filename = new URL(sasURL).pathname.split("/").pop();
+    const url = new URL(sasURL);
+    const host = url.host;
+    const protocol = url.protocol;
+    const filename = url.pathname.split("/").pop();
     const blobServiceClient = new BlobServiceClient(
-      `https://${ACCOUNT}.blob.core.windows.net?${sasToken}`
+      `${protocol}//${host}?${sasToken}`
     );
 
     const containerClient = blobServiceClient.getContainerClient(CONTAINER);
