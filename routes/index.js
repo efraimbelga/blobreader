@@ -37,7 +37,7 @@ router.get("/blob/", function (request, response) {
   if (url && token) {
     sasURL = url;
     sasToken = token;
-    console.log("cookies: ", request.cookies);
+
     const user = request.cookies.user;
     if (!user) {
       response.redirect(
@@ -79,7 +79,6 @@ async function main(sasURL, sasToken, account) {
     await blobClient.downloadToFile(newFileNameAndPath);
     return `<h1>${filename} downloaded successfully!</h1><p>Please check <b>${newFileNameAndPath}</b></p>`;
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
