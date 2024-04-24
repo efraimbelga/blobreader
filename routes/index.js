@@ -31,20 +31,13 @@ router.post("/login", function (req, res) {
 router.get("/blob", function (request, response) {
   const { url, token } = request.query;
   if (url && token) {
-    sasURL = url;
-    sasToken = token;
-
     const user = request.cookies.user;
     if (!user) {
-      response.redirect(
-        `/api/login?url=${encodeURIComponent(
-          sasURL
-        )}&token=${encodeURIComponent(sasToken)}`
-      );
+      response.redirect(`/api/login?url=${url}&token=${token}`);
       return;
     }
 
-    main(sasURL, sasToken)
+    main(url, token)
       .then((data) => response.send(data))
       .catch((error) =>
         response.render("error", {
@@ -60,12 +53,15 @@ router.get("/blob", function (request, response) {
   }
 });
 
-async function main(sasURL, sasToken) {
+async function main(url, token) {
   try {
-    const url = new URL(sasURL);
-    const host = url.host;
-    const protocol = url.protocol;
-    const pathname = url.pathname;
+    const sasURL = Buffer.from(url, "base64").toString("utf-8");
+    const sasToken = Buffer.from(token, "base64").toString("utf-8");
+
+    const uri = new URL(sasURL);
+    const host = uri.host;
+    const protocol = uri.protocol;
+    const pathname = uri.pathname;
     const filename = pathname.split("/").pop();
     const container = pathname
       .slice(0, pathname.lastIndexOf("/"))
