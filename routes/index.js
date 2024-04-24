@@ -1,10 +1,10 @@
 var express = require("express");
 var cookieParser = require("cookie-parser");
-const fs = require("fs");
-var router = express.Router();
-router.use(express.urlencoded({ extended: true }));
 
+var router = express.Router();
 router.use(cookieParser());
+
+var fileSys = require("fs");
 const { BlobServiceClient } = require("@azure/storage-blob");
 const path = require("path");
 
@@ -69,14 +69,22 @@ async function main(url, token) {
     const blobServiceClient = new BlobServiceClient(
       `${protocol}//${host}?${sasToken}`
     );
+    const containerClient = blobServiceClient.getContainerClient(container);
+    const blobClient = containerClient.getBlobClient(filename);
+    // console.log(blobClient.getProperties());
+    // return (await blobClient.getProperties()).contentType;
+
+    const ext = path.extname(filename);
+    if (!ext) {
+      throw new Error("Unknown file type");
+    }
 
     const dirname = __dirname.split("\\");
     var downloadsPath =
       dirname.slice(0, dirname.length - 1).join("\\") + "\\downloads";
-    !fs.existsSync(downloadsPath) && fs.mkdirSync(downloadsPath);
 
-    const containerClient = blobServiceClient.getContainerClient(container);
-    const blobClient = containerClient.getBlobClient(filename);
+    !fileSys.existsSync(downloadsPath) && fs.mkdirSync(downloadsPath);
+
     const newFileNameAndPath = path.join(downloadsPath, filename);
     await blobClient.downloadToFile(newFileNameAndPath);
     return `<h1>${filename} downloaded successfully!</h1><p>Please check <b>${newFileNameAndPath}</b></p>`;
