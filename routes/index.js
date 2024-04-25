@@ -5,6 +5,7 @@ var router = express.Router();
 router.use(cookieParser());
 
 var fileSys = require("fs");
+const wave = require("wave");
 const { BlobServiceClient } = require("@azure/storage-blob");
 const path = require("path");
 
@@ -72,15 +73,19 @@ async function main(url, token) {
     const containerClient = blobServiceClient.getContainerClient(container);
     const blobClient = containerClient.getBlobClient(filename);
     // console.log(blobClient.getProperties());
-    // return (await blobClient.getProperties()).contentType;
-
     const ext = path.extname(filename);
     if (!ext) {
-      throw new Error("Unknown file type");
+      const contentType = (await blobClient.getProperties()).contentType;
+      // console.log(contentType);
+      if (contentType === "audio/x-wav" || contentType === "audio/wav") {
+        filename = filename + ".wav";
+      } else {
+        throw new Error("Unknown file type");
+      }
     }
 
     const dirname = __dirname.split("\\");
-    var downloadsPath =
+    const downloadsPath =
       dirname.slice(0, dirname.length - 1).join("\\") + "\\downloads";
 
     !fileSys.existsSync(downloadsPath) && fs.mkdirSync(downloadsPath);
