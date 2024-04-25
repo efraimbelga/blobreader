@@ -5,12 +5,16 @@ var router = express.Router();
 router.use(cookieParser());
 
 var fileSys = require("fs");
-const wave = require("wave");
-const { BlobServiceClient } = require("@azure/storage-blob");
-const path = require("path");
 
+const { DefaultAzureCredential } = require("@azure/identity");
+const {
+  BlobServiceClient,
+  StorageSharedKeyCredential,
+} = require("@azure/storage-blob");
+
+// const path = require("path");
+const path = require("node:path");
 const sqlite = require("sqlite3");
-const axios = require("axios");
 
 const db = new sqlite.Database("./test.db", sqlite.OPEN_READWRITE, (err) => {
   if (err) console.log(err);
@@ -37,18 +41,28 @@ router.post("/login", function (req, res) {
 });
 
 router.get("/blob", function (request, response) {
-  const { url, token } = request.query;
-  if (url && token) {
+  // const { url, token } = request.query;
+  // if (url && token) {
+  const { url } = request.query;
+  if (url) {
     const user = request.cookies.user;
     if (!user) {
-      response.redirect(`/api/login?url=${url}&token=${token}`);
+      // response.redirect(`/api/login?url=${url}&token=${token}`);
+      response.redirect(`/api/login?url=${url}`);
       return;
     }
 
-    main(url, token)
+    main(url)
       .then((data) => {
-        getData();
-        response.send(data);
+        // getData(); //display db data
+        const filename = path.basename(data);
+        const result = `<h1>${filename} downloaded successfully!</h1><p>Please check <b>${data}</b></p>`;
+
+        uploadAudio(data);
+        response.send(result);
+
+        // insertData(filename, contentType); //Insert to db
+        return;
       })
       .catch((error) =>
         response.render("error", {
@@ -64,50 +78,75 @@ router.get("/blob", function (request, response) {
   }
 });
 
-async function main(url, token) {
+async function main(url) {
   try {
     const sasURL = Buffer.from(url, "base64").toString("utf-8");
-    const sasToken = Buffer.from(token, "base64").toString("utf-8");
+    // const sasToken = Buffer.from(token, "base64").toString("utf-8");
 
     const uri = new URL(sasURL);
+    const sasToken = new URLSearchParams(uri.search);
+
     const host = uri.host;
+
     const protocol = uri.protocol;
     const pathname = uri.pathname;
-    const filename = pathname.split("/").pop();
-    const container = pathname
-      .slice(0, pathname.lastIndexOf("/"))
-      .replace("/", "");
+    const filename = path.basename(pathname);
+    const [container] = path
+      .dirname(pathname.replace(/^\/|\/$/g, ""))
+      .split("/");
     const blobServiceClient = new BlobServiceClient(
       `${protocol}//${host}?${sasToken}`
     );
     const containerClient = blobServiceClient.getContainerClient(container);
     const blobClient = containerClient.getBlobClient(filename);
-    const contentType = (await blobClient.getProperties()).contentType;
+
     const ext = path.extname(filename);
     if (!ext) {
-      if (contentType === "audio/x-wav" || contentType === "audio/wav") {
-        filename = filename + ".wav";
-      } else {
-        throw new Error("Unknown file type");
-      }
+      throw new Error("Unknown file type");
     }
 
-    const dirname = __dirname.split("\\");
-    const downloadsPath =
-      dirname.slice(0, dirname.length - 1).join("\\") + "\\downloads";
-
-    !fileSys.existsSync(downloadsPath) && fs.mkdirSync(downloadsPath);
+    const downloadsPath = path.resolve(__dirname, "../downloads");
+    // console.log({ downloadsPath });
+    !fileSys.existsSync(downloadsPath) && fileSys.mkdirSync(downloadsPath);
 
     const newFileNameAndPath = path.join(downloadsPath, filename);
     await blobClient.downloadToFile(newFileNameAndPath);
 
-    insertData(filename, contentType);
-
-    return `<h1>${filename} downloaded successfully!</h1><p>Please check <b>${newFileNameAndPath}</b></p>`;
+    return newFileNameAndPath;
   } catch (error) {
     throw error;
   }
 }
+
+const uploadAudio = async (newFileNameAndPath) => {
+  try {
+    // console.log(newFileNameAndPath);
+    const account = "genaistorageaccount02"; //request.cookies.user.account
+    const accountKey =
+      "GicYbkLLELQ4H69hWr9C87l7gWzGvez0sK9ulsjekZTz1Wmn1Y8w3pxgebVFLrFYAy9NGQsTu3Bd+AStvNGRqQ==";
+    const containerName = "web";
+    const sharedKeyCredential = new StorageSharedKeyCredential(
+      account,
+      accountKey
+    );
+    const blobServiceClient = new BlobServiceClient(
+      `https://${account}.blob.core.windows.net`,
+      sharedKeyCredential
+    );
+
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const createContainerResponse = await containerClient.createIfNotExists();
+
+    const blobName = path.basename(newFileNameAndPath);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    const uploadBlobResponse = await blockBlobClient.uploadFile(
+      newFileNameAndPath.replaceAll("\\", "/")
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 // creatTable();
 
@@ -116,6 +155,7 @@ const creatTable = () => {
     "CREATE TABLE IF NOT EXISTS audio(ID INTEGER PRIMARY KEY, filename, filetype)";
   db.run(sql);
 };
+
 const insertData = (filename, contentType) => {
   try {
     const sql = "INSERT INTO audio(filename, filetype) VALUES(?,?)";
