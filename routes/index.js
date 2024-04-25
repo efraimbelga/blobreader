@@ -1,12 +1,13 @@
 var express = require("express");
 var cookieParser = require("cookie-parser");
+require("dotenv").config();
+// console.log(process.env);
 
 var router = express.Router();
 router.use(cookieParser());
 
 var fileSys = require("fs");
 
-const { DefaultAzureCredential } = require("@azure/identity");
 const {
   BlobServiceClient,
   StorageSharedKeyCredential,
@@ -41,28 +42,26 @@ router.post("/login", function (req, res) {
 });
 
 router.get("/blob", function (request, response) {
-  // const { url, token } = request.query;
-  // if (url && token) {
   const { url } = request.query;
   if (url) {
     const user = request.cookies.user;
     if (!user) {
-      // response.redirect(`/api/login?url=${url}&token=${token}`);
       response.redirect(`/api/login?url=${url}`);
       return;
     }
 
     main(url)
-      .then((data) => {
-        // getData(); //display db data
-        const filename = path.basename(data);
-        const result = `<h1>${filename} downloaded successfully!</h1><p>Please check <b>${data}</b></p>`;
+      .then((mainResult) => {
+        const filename = path.basename(mainResult);
+        const result = `<h1>${filename} downloaded successfully!</h1><p>Please check <b>${mainResult}</b></p>`;
 
-        uploadAudio(data);
-        response.send(result);
-
-        // insertData(filename, contentType); //Insert to db
-        return;
+        createContainer(mainResult)
+          .then(() => {
+            // console.log({ createContainerResult });
+            response.send(result);
+            return;
+          })
+          .catch((error) => console.log(error));
       })
       .catch((error) =>
         response.render("error", {
@@ -81,8 +80,6 @@ router.get("/blob", function (request, response) {
 async function main(url) {
   try {
     const sasURL = Buffer.from(url, "base64").toString("utf-8");
-    // const sasToken = Buffer.from(token, "base64").toString("utf-8");
-
     const uri = new URL(sasURL);
     const sasToken = new URLSearchParams(uri.search);
 
@@ -106,7 +103,7 @@ async function main(url) {
     }
 
     const downloadsPath = path.resolve(__dirname, "../downloads");
-    // console.log({ downloadsPath });
+
     !fileSys.existsSync(downloadsPath) && fileSys.mkdirSync(downloadsPath);
 
     const newFileNameAndPath = path.join(downloadsPath, filename);
@@ -114,16 +111,18 @@ async function main(url) {
 
     return newFileNameAndPath;
   } catch (error) {
+    // console.log({ error });
     throw error;
   }
 }
 
-const uploadAudio = async (newFileNameAndPath) => {
+const createContainer = async (newFileNameAndPath) => {
   try {
     // console.log(newFileNameAndPath);
-    const account = "genaistorageaccount02"; //request.cookies.user.account
-    const accountKey =
-      "GicYbkLLELQ4H69hWr9C87l7gWzGvez0sK9ulsjekZTz1Wmn1Y8w3pxgebVFLrFYAy9NGQsTu3Bd+AStvNGRqQ==";
+    const account = process.env.STORAGE_ACCOUNT;
+    // console.log({ account });
+    const accountKey = process.env.ACCOUNT_KEY;
+    // console.log({ accountKey });
     const containerName = "web";
     const sharedKeyCredential = new StorageSharedKeyCredential(
       account,
@@ -135,14 +134,12 @@ const uploadAudio = async (newFileNameAndPath) => {
     );
 
     const containerClient = blobServiceClient.getContainerClient(containerName);
-    const createContainerResponse = await containerClient.createIfNotExists();
+    await containerClient.createIfNotExists();
 
     const blobName = path.basename(newFileNameAndPath);
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-    const uploadBlobResponse = await blockBlobClient.uploadFile(
-      newFileNameAndPath.replaceAll("\\", "/")
-    );
+    await blockBlobClient.uploadFile(newFileNameAndPath.replaceAll("\\", "/"));
   } catch (error) {
     console.log(error);
   }
