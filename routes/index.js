@@ -51,23 +51,37 @@ router.get("/blob", function (request, response) {
     }
 
     main(url)
-      .then((mainResult) => {
-        const filename = path.basename(mainResult);
-        const result = `${filename} donwloaded successfully! Now uploading...`;
-        reconsole.log({ result });
-        return mainResult;
+      .then((newFileNameAndPath) => {
+        const result = `${path.basename(
+          newFileNameAndPath
+        )} donwloaded successfully! Creating container...`;
+        console.log({ result });
+        return newFileNameAndPath;
       })
-      .then((mainResult) => {
-        // console.log({ mainResult });
-        createContainer(mainResult)
-          .then(() => {
-            const filename = path.basename(mainResult);
-            const result = `<h1>${filename} uploaded successfully!</h1>`;
-            reconsole.log({ result });
-            response.send(result);
-            return;
+      .then((newFileNameAndPath) => {
+        createContainer()
+          .then((containerClient) => {
+            const result = "Container created. Now uploading...";
+            console.log({ result });
+
+            uploadBlob(newFileNameAndPath, containerClient).then(() => {
+              const result = `${path.basename(
+                newFileNameAndPath
+              )} uploaded successfully!`;
+              console.log({ result });
+              response.render("error", {
+                title: "Success!",
+                message: result,
+              });
+              return;
+            });
           })
-          .catch((error) => console.log(error));
+          .catch((error) =>
+            response.render("error", {
+              title: error.name,
+              message: error.message || error.details.errorCode,
+            })
+          );
       })
       .catch((error) =>
         response.render("error", {
@@ -122,7 +136,7 @@ async function main(url) {
   }
 }
 
-const createContainer = async (newFileNameAndPath) => {
+const createContainer = async () => {
   try {
     // console.log(newFileNameAndPath);
     const account = process.env.STORAGE_ACCOUNT;
@@ -141,15 +155,19 @@ const createContainer = async (newFileNameAndPath) => {
 
     const containerClient = blobServiceClient.getContainerClient(containerName);
     await containerClient.createIfNotExists();
-
-    const blobName = path.basename(newFileNameAndPath);
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-    await blockBlobClient.uploadFile(newFileNameAndPath.replaceAll("\\", "/"));
+    return containerClient;
   } catch (error) {
     console.log({ error });
+    throw error;
   }
 };
+
+async function uploadBlob(newFileNameAndPath, containerClient) {
+  const blobName = path.basename(newFileNameAndPath);
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+  await blockBlobClient.uploadFile(newFileNameAndPath.replaceAll("\\", "/"));
+}
 
 // creatTable();
 
