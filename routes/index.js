@@ -53,11 +53,17 @@ router.get("/blob", function (request, response) {
     main(url)
       .then((mainResult) => {
         const filename = path.basename(mainResult);
-        const result = `<h1>${filename} downloaded successfully!</h1><p>Please check <b>${mainResult}</b></p>`;
-
+        const result = `${filename} donwloaded successfully! Now uploading...`;
+        reconsole.log({ result });
+        return mainResult;
+      })
+      .then((mainResult) => {
+        // console.log({ mainResult });
         createContainer(mainResult)
           .then(() => {
-            // console.log({ createContainerResult });
+            const filename = path.basename(mainResult);
+            const result = `<h1>${filename} uploaded successfully!</h1>`;
+            reconsole.log({ result });
             response.send(result);
             return;
           })
@@ -141,7 +147,7 @@ const createContainer = async (newFileNameAndPath) => {
 
     await blockBlobClient.uploadFile(newFileNameAndPath.replaceAll("\\", "/"));
   } catch (error) {
-    console.log(error);
+    console.log({ error });
   }
 };
 
