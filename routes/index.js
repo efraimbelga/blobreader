@@ -9,6 +9,13 @@ const wave = require("wave");
 const { BlobServiceClient } = require("@azure/storage-blob");
 const path = require("path");
 
+const sqlite = require("sqlite3");
+const axios = require("axios");
+
+const db = new sqlite.Database("./test.db", sqlite.OPEN_READWRITE, (err) => {
+  if (err) console.log(err);
+});
+
 router.get("/login", (request, response) => {
   response.render("login");
 });
@@ -39,7 +46,10 @@ router.get("/blob", function (request, response) {
     }
 
     main(url, token)
-      .then((data) => response.send(data))
+      .then((data) => {
+        getData();
+        response.send(data);
+      })
       .catch((error) =>
         response.render("error", {
           title: error.name,
@@ -72,11 +82,9 @@ async function main(url, token) {
     );
     const containerClient = blobServiceClient.getContainerClient(container);
     const blobClient = containerClient.getBlobClient(filename);
-    // console.log(blobClient.getProperties());
+    const contentType = (await blobClient.getProperties()).contentType;
     const ext = path.extname(filename);
     if (!ext) {
-      const contentType = (await blobClient.getProperties()).contentType;
-      // console.log(contentType);
       if (contentType === "audio/x-wav" || contentType === "audio/wav") {
         filename = filename + ".wav";
       } else {
@@ -92,10 +100,45 @@ async function main(url, token) {
 
     const newFileNameAndPath = path.join(downloadsPath, filename);
     await blobClient.downloadToFile(newFileNameAndPath);
+
+    insertData(filename, contentType);
+
     return `<h1>${filename} downloaded successfully!</h1><p>Please check <b>${newFileNameAndPath}</b></p>`;
   } catch (error) {
     throw error;
   }
 }
+
+// creatTable();
+
+const creatTable = () => {
+  const sql =
+    "CREATE TABLE IF NOT EXISTS audio(ID INTEGER PRIMARY KEY, filename, filetype)";
+  db.run(sql);
+};
+const insertData = (filename, contentType) => {
+  try {
+    const sql = "INSERT INTO audio(filename, filetype) VALUES(?,?)";
+    db.run(sql, [filename, contentType], (error) => {
+      error ? console.log(error) : console.log("Insert success");
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const getData = () => {
+  try {
+    const sql = "SELECT * FROM audio";
+    db.all(sql, [], (err, rows) => {
+      if (err) throw new Error(err);
+      rows.forEach((row) => {
+        console.log("Audio data: ", row);
+      });
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};
 
 module.exports = router;
