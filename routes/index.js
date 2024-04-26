@@ -22,8 +22,7 @@ const sqlite = require("sqlite3");
 // });
 
 router.get("/createsas", (request, response) => {
-  const url =
-    "https://genaistorageaccount02.blob.core.windows.net/mobile/2024424Record0.wav?sp=r&st=2024-04-26T03:49:13Z&se=2024-04-26T11:49:13Z&spr=https&sv=2022-11-02&sr=b&sig=ewchg9Uu9Dr03C37UIgo94V1%2FOYn7qtX0D4KBDeejYg%3D";
+  const url = "";
   const encoded = Buffer.from(url, "utf-8").toString("base64");
   console.log({ encoded });
 });
