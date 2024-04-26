@@ -52,9 +52,7 @@ router.get("/blob", function (request, response) {
 
     main(url)
       .then((newFileNameAndPath) => {
-        const result = `${path.basename(
-          newFileNameAndPath
-        )} donwloaded successfully! Creating container...`;
+        const result = `Donwloaded successfully! Creating container...`;
         console.log({ result });
         return newFileNameAndPath;
       })
@@ -67,9 +65,9 @@ router.get("/blob", function (request, response) {
             uploadBlob(newFileNameAndPath, containerClient).then(() => {
               const result = `${path.basename(
                 newFileNameAndPath
-              )} uploaded successfully!`;
+              )} was uploaded successfully!`;
               console.log({ result });
-              response.render("error", {
+              response.render("index", {
                 title: "Success!",
                 message: result,
               });
@@ -77,20 +75,20 @@ router.get("/blob", function (request, response) {
             });
           })
           .catch((error) =>
-            response.render("error", {
+            response.render("index", {
               title: error.name,
               message: error.message || error.details.errorCode,
             })
           );
       })
       .catch((error) =>
-        response.render("error", {
+        response.render("index", {
           title: error.name,
           message: error.message || error.details.errorCode,
         })
       );
   } else {
-    response.render("error", {
+    response.render("index", {
       title: "Invalid",
       message: "URI Invalid. Please check and try again.",
     });
