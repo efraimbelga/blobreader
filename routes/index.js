@@ -17,12 +17,21 @@ const {
 const path = require("node:path");
 const sqlite = require("sqlite3");
 
-const db = new sqlite.Database("./test.db", sqlite.OPEN_READWRITE, (err) => {
-  if (err) console.log(err);
+// const db = new sqlite.Database("./test.db", sqlite.OPEN_READWRITE, (err) => {
+//   if (err) console.log(err);
+// });
+
+router.get("/createsas", (request, response) => {
+  const url =
+    "https://genaistorageaccount02.blob.core.windows.net/mobile/2024424Record0.wav?sp=r&st=2024-04-26T03:49:13Z&se=2024-04-26T11:49:13Z&spr=https&sv=2022-11-02&sr=b&sig=ewchg9Uu9Dr03C37UIgo94V1%2FOYn7qtX0D4KBDeejYg%3D";
+  const encoded = Buffer.from(url, "utf-8").toString("base64");
+  console.log({ encoded });
 });
 
 router.get("/login", (request, response) => {
-  response.render("login");
+  const html = path.resolve(__dirname, "../views/loginform.html");
+  response.sendFile(html);
+  // response.render("login");
 });
 
 router.get("/logout", (request, response) => {
@@ -67,31 +76,47 @@ router.get("/blob", function (request, response) {
                 newFileNameAndPath
               )} was uploaded successfully!`;
               console.log({ result });
-              response.render("index", {
-                title: "Success!",
-                message: result,
-              });
+              const html = path.resolve(__dirname, "../views/success.html");
+              response.sendFile(html);
+              // response.render("index", {
+              //   title: "Success!",
+              //   message: result,
+              // });
               return;
             });
           })
-          .catch((error) =>
-            response.render("index", {
-              title: error.name,
-              message: error.message || error.details.errorCode,
-            })
+          .catch(
+            (error) => {
+              console.log({ error });
+              const html = path.resolve(__dirname, "../views/error.html");
+              response.sendFile(html);
+            }
+            // response.render("index", {
+            //   title: error.name,
+            //   message: error.message || error.details.errorCode,
+            // })
           );
       })
       .catch((error) =>
-        response.render("index", {
-          title: error.name,
-          message: error.message || error.details.errorCode,
-        })
+        // response.render("index", {
+        //   title: error.name,
+        //   message: error.message || error.details.errorCode,
+        // })
+        {
+          console.log({ error });
+          const html = path.resolve(__dirname, "../views/error.html");
+          response.sendFile(html);
+        }
       );
   } else {
-    response.render("index", {
-      title: "Invalid",
-      message: "URI Invalid. Please check and try again.",
-    });
+    // response.render("index", {
+    //   title: "Invalid",
+    //   message: "URI Invalid. Please check and try again.",
+    // });
+    const error = "URI Invalid. Please check and try again.";
+    console.log({ error });
+    const html = path.resolve(__dirname, "../views/error.html");
+    response.sendFile(html);
   }
 });
 
