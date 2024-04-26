@@ -1,10 +1,15 @@
+extends layout
+
 block content
-h1 Please login
-form(action="/api/login"  method="post") 
-  label(for="account") Account: 
-  input(type="text" id="account" name="account")
-  br
-  label(for="key") User Key: 
-  input(type="text" id="key" name="key")
-  br
-  button Submit 
+  h1 Please login
+  form(action="/api/login"  method="post") 
+    label(for="account") Account: 
+    br
+    input(type="text" id="account" name="account")
+    br
+    label(for="key") User Key: 
+    br
+    input(type="text" id="key" name="key")
+    br
+    br
+    button Submit 

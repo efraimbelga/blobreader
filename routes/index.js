@@ -28,9 +28,9 @@ router.get("/createsas", (request, response) => {
 });
 
 router.get("/login", (request, response) => {
-  const html = path.resolve(__dirname, "../views/loginform.html");
-  response.sendFile(html);
-  // response.render("login");
+  // const html = path.resolve(__dirname, "../views/loginform.html");
+  // response.sendFile(html);
+  response.render("login");
 });
 
 router.get("/logout", (request, response) => {
@@ -75,47 +75,48 @@ router.get("/blob", function (request, response) {
                 newFileNameAndPath
               )} was uploaded successfully!`;
               console.log({ result });
-              const html = path.resolve(__dirname, "../views/success.html");
-              response.sendFile(html);
-              // response.render("index", {
-              //   title: "Success!",
-              //   message: result,
-              // });
+              // const html = path.resolve(__dirname, "../views/success.html");
+              // response.sendFile(html);
+              response.render("index", {
+                title: "Success!",
+                message: result,
+              });
               return;
             });
           })
-          .catch(
-            (error) => {
-              console.log({ error });
-              const html = path.resolve(__dirname, "../views/error.html");
-              response.sendFile(html);
-            }
-            // response.render("index", {
-            //   title: error.name,
-            //   message: error.message || error.details.errorCode,
-            // })
+          .catch((error) =>
+            // {
+            //   console.log({ error });
+            //   const html = path.resolve(__dirname, "../views/error.html");
+            //   response.sendFile(html);
+            // }
+            response.render("index", {
+              title: error.name,
+              message: error.message || error.details.errorCode,
+            })
           );
       })
-      .catch((error) =>
-        // response.render("index", {
-        //   title: error.name,
-        //   message: error.message || error.details.errorCode,
-        // })
-        {
-          console.log({ error });
-          const html = path.resolve(__dirname, "../views/error.html");
-          response.sendFile(html);
-        }
+      .catch(
+        (error) =>
+          response.render("index", {
+            title: error.name,
+            message: error.message || error.details.errorCode,
+          })
+        // {
+        //   console.log({ error });
+        //   const html = path.resolve(__dirname, "../views/error.html");
+        //   response.sendFile(html);
+        // }
       );
   } else {
-    // response.render("index", {
-    //   title: "Invalid",
-    //   message: "URI Invalid. Please check and try again.",
-    // });
-    const error = "URI Invalid. Please check and try again.";
-    console.log({ error });
-    const html = path.resolve(__dirname, "../views/error.html");
-    response.sendFile(html);
+    response.render("index", {
+      title: "Invalid",
+      message: "URI Invalid. Please check and try again.",
+    });
+    // const error = "URI Invalid. Please check and try again.";
+    // console.log({ error });
+    // const html = path.resolve(__dirname, "../views/error.html");
+    // response.sendFile(html);
   }
 });
 
@@ -179,7 +180,7 @@ const createContainer = async () => {
     await containerClient.createIfNotExists();
     return containerClient;
   } catch (error) {
-    console.log({ error });
+    // console.log({ error });
     throw error;
   }
 };
