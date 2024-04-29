@@ -1,5 +1,6 @@
 extends layout
 
 block content
-  h1= title
-  p= message
+  div(class="flex min-h-full flex-col px-6 py-12 lg:px-8 ")
+    p(class="text-5xl font-bold pb-4")= title
+    p= message
