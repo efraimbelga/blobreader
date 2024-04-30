@@ -8,21 +8,25 @@ block content
 
       div(class="sm:mx-auto sm:w-full sm:max-w-sm")
         form(class="space-y-6" action="/api/login"  method="post") 
-          div
-            div(class="mt-2")
+          
+          div(class="mt-2")
               input( placeholder="Account"
                   id="account"
                   name="account"
                   type="text"
                   autocomplete="Account"
                   class="px-3 h-14 md:text-lg block w-full border-2 rounded py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-teal-600")
-          div
-            div(class="mt-2")
+          
+          div(class="mt-2")
               input( placeholder="Account Key"
                   id="key"
                   name="key"
                   type="text"
                   autocomplete="Account Key"
                   class="px-3 h-14 md:text-lg block w-full border-2 rounded py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-teal-600")
+          
+          div(class="flex items-center justify-center")
+            p= error
+
           div(class="flex items-center justify-center")
             button( class="rounded-3xl flex justify-center bg-teal-800 px-8 py-3 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-teal-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700") SIGN IN 
