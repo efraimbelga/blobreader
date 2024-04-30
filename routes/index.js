@@ -57,7 +57,7 @@ async function fnCompactEncrypt(jwe) {
   try {
     // const sasURL =
     //   "aHR0cHM6Ly9nZW5haXN0b3JhZ2VhY2NvdW50MDIuYmxvYi5jb3JlLndpbmRvd3MubmV0L21vYmlsZS9rYXRpZXN0ZXZlLndhdj9zcD1yJnN0PTIwMjQtMDQtMzBUMDY6NDQ6MTNaJnNlPTIwMjQtMDQtMzBUMTQ6NDQ6MTNaJnNwcj1odHRwcyZzdj0yMDIyLTExLTAyJnNyPWImc2lnPXBQVFhucTlIUXhXR2k3OFFka2xaTks5eWl0ZWVnVjlFZkZtNVI2cUpxRG8lM0Q=";
-    // const secret = jose.base64url.decode(process.env.USER_SECRET);
+    const secret = jose.base64url.decode(process.env.USER_SECRET);
     // const jwe = await new jose.CompactEncrypt(new TextEncoder().encode(sasURL))
     //   .setProtectedHeader({ alg: "dir", enc: "A128CBC-HS256" })
     //   .encrypt(secret);
