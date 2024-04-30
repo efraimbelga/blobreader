@@ -20,6 +20,60 @@ const sqlite = require("sqlite3");
 // const db = new sqlite.Database("./test.db", sqlite.OPEN_READWRITE, (err) => {
 //   if (err) console.log(err);
 // });
+const jose = require("jose");
+// const text = "@gsk-genai-mobile-aws-2024-04-30";
+// const secret = jose.base64url.encode(text);
+// console.log({ secret });
+async function fnEncryptJWT() {
+  const secret = jose.base64url.decode(
+    "zH4NRP1HMALxxCFnRZABFA7GOJtzU_gIj02alfL1lvI"
+  );
+  const payloadVal = {
+    sas: "aHR0cHM6Ly9nZW5haXN0b3JhZ2VhY2NvdW50MDIuYmxvYi5jb3JlLndpbmRvd3MubmV0L21vYmlsZS9rYXRpZXN0ZXZlLndhdj9zcD1yJnN0PTIwMjQtMDQtMzBUMDM6NTI6MjlaJnNlPTIwMjQtMDQtMzBUMTE6NTI6MjlaJnNwcj1odHRwcyZzdj0yMDIyLTExLTAyJnNyPWImc2lnPXJlQml2dTZ2SEU1c1FTQ0swV1E4U3EyWmpMJTJGeUdsY1pWMiUyQjhyOElpUHg0JTNE",
+  };
+  const jwt = await new jose.EncryptJWT(payloadVal)
+    .setProtectedHeader({ alg: "dir", enc: "A128CBC-HS256" })
+    // .setIssuedAt()
+    // .setIssuer("urn:example:issuer")
+    // .setAudience("urn:example:audience")
+    // .setExpirationTime("2h")
+    .encrypt(secret);
+  console.log({ jwt });
+
+  const { payload, protectedHeader } = await jose.jwtDecrypt(
+    jwt,
+    secret
+    // {
+    // issuer: "urn:example:issuer",
+    // audience: "urn:example:audience",
+    // }
+  );
+
+  console.log("jwt protectedHeader: ", protectedHeader);
+  console.log("jwt payload: ", payload);
+}
+// fnCompactEncrypt();
+async function fnCompactEncrypt(jwe) {
+  try {
+    // const sasURL =
+    //   "aHR0cHM6Ly9nZW5haXN0b3JhZ2VhY2NvdW50MDIuYmxvYi5jb3JlLndpbmRvd3MubmV0L21vYmlsZS9rYXRpZXN0ZXZlLndhdj9zcD1yJnN0PTIwMjQtMDQtMzBUMDY6NDQ6MTNaJnNlPTIwMjQtMDQtMzBUMTQ6NDQ6MTNaJnNwcj1odHRwcyZzdj0yMDIyLTExLTAyJnNyPWImc2lnPXBQVFhucTlIUXhXR2k3OFFka2xaTks5eWl0ZWVnVjlFZkZtNVI2cUpxRG8lM0Q=";
+    // const secret = jose.base64url.decode(process.env.USER_SECRET);
+    // const jwe = await new jose.CompactEncrypt(new TextEncoder().encode(sasURL))
+    //   .setProtectedHeader({ alg: "dir", enc: "A128CBC-HS256" })
+    //   .encrypt(secret);
+    // console.log({ jwe });
+    const { plaintext, protectedHeader } = await jose.compactDecrypt(
+      jwe,
+      secret
+    );
+    // console.log("jwe protectedHeader: ", protectedHeader);
+    // console.log("jwe plaintext: ", new TextDecoder().decode(plaintext));
+    return new TextDecoder().decode(plaintext);
+  } catch (error) {
+    // console.log({ error });
+    throw error;
+  }
+}
 
 router.get("/createsas", (request, response) => {
   const url = "";
@@ -30,7 +84,8 @@ router.get("/createsas", (request, response) => {
 router.get("/login", (request, response) => {
   // const html = path.resolve(__dirname, "../views/loginform.html");
   // response.sendFile(html);
-  response.render("login");
+  const { error } = request.query;
+  response.render("login", { error });
 });
 
 router.get("/logout", (request, response) => {
@@ -46,77 +101,94 @@ router.post("/login", function (req, res) {
   res.cookie("user", user, { maxAge: 180000 });
   const referer = new URL(req.headers.referer);
   const params = new URLSearchParams(referer.search);
+  // params.delete("error");
+  // console.log({ params });
+  // return;
+
+  // // if (error) {
+  // res.redirect(`/api/login?error=Username or password invalid&${params}`);
+  // //   return;
+  // // }
   res.redirect(`/api/blob?${params}`);
 });
 
+// fnEncryptJWT();
+// fnCompactEncrypt();
 router.get("/blob", function (request, response) {
-  const { url } = request.query;
-  if (url) {
+  const { id } = request.query;
+  if (id) {
     const user = request.cookies.user;
     if (!user) {
-      response.redirect(`/api/login?url=${url}`);
+      response.redirect(`/api/login?id=${id}`);
       return;
     }
 
-    main(url)
-      .then((newFileNameAndPath) => {
-        const result = `Donwloaded successfully! Creating container...`;
-        console.log({ result });
-        return newFileNameAndPath;
-      })
-      .then((newFileNameAndPath) => {
-        createContainer()
-          .then((containerClient) => {
-            const result = "Container created. Now uploading...";
+    fnCompactEncrypt(id)
+      .then((url) => {
+        console.log({ url });
+        main(url)
+          .then((newFileNameAndPath) => {
+            const result = `Donwloaded successfully! Creating container...`;
             console.log({ result });
-
-            uploadBlob(newFileNameAndPath, containerClient).then(() => {
-              const result = `${path.basename(
-                newFileNameAndPath
-              )} was uploaded successfully!`;
-              console.log({ result });
-              // const html = path.resolve(__dirname, "../views/success.html");
-              // response.sendFile(html);
-              response.render("index", {
-                title: "Success!",
-                message: result,
-              });
-              return;
-            });
+            return newFileNameAndPath;
           })
-          .catch((error) =>
+          .then((newFileNameAndPath) => {
+            createContainer()
+              .then((containerClient) => {
+                const result = "Container created. Now uploading...";
+                console.log({ result });
+
+                uploadBlob(newFileNameAndPath, containerClient).then(() => {
+                  const result = `${path.basename(
+                    newFileNameAndPath
+                  )} was uploaded successfully!`;
+                  console.log({ result });
+                  // const html = path.resolve(__dirname, "../views/success.html");
+                  // response.sendFile(html);
+                  response.render("index", {
+                    title: "Success!",
+                    message: result,
+                  });
+                  return;
+                });
+              })
+              .catch((error) =>
+                // {
+                //   console.log({ error });
+                //   const html = path.resolve(__dirname, "../views/error.html");
+                //   response.sendFile(html);
+                // }
+                response.render("index", {
+                  title: error.name,
+                  message: error.message || error.details.errorCode,
+                })
+              );
+          })
+          .catch(
+            (error) =>
+              response.render("index", {
+                title: error.name,
+                message: error.message || error.details.errorCode,
+              })
             // {
             //   console.log({ error });
             //   const html = path.resolve(__dirname, "../views/error.html");
             //   response.sendFile(html);
             // }
-            response.render("index", {
-              title: error.name,
-              message: error.message || error.details.errorCode,
-            })
           );
       })
-      .catch(
-        (error) =>
-          response.render("index", {
-            title: error.name,
-            message: error.message || error.details.errorCode,
-          })
-        // {
-        //   console.log({ error });
-        //   const html = path.resolve(__dirname, "../views/error.html");
-        //   response.sendFile(html);
-        // }
-      );
+      .catch((error) => {
+        console.log({ error });
+        response.render("index", {
+          title: error.name,
+          message: error.message || error.details.errorCode,
+        });
+      });
   } else {
     response.render("index", {
       title: "Invalid",
       message: "URI Invalid. Please check and try again.",
     });
-    // const error = "URI Invalid. Please check and try again.";
-    // console.log({ error });
-    // const html = path.resolve(__dirname, "../views/error.html");
-    // response.sendFile(html);
   }
 });
 
