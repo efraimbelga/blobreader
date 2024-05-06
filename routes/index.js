@@ -21,9 +21,15 @@ const sqlite = require("sqlite3");
 //   if (err) console.log(err);
 // });
 const jose = require("jose");
-// const text = "@gsk-genai-mobile-aws-2024-04-30";
-// const secret = jose.base64url.encode(text);
-// console.log({ secret });
+
+function createSecret() {
+  const text = "@gsk-genai-mobile-aws-2024-04-30";
+  //QGdzay1nZW5haS1tb2JpbGUtYXdzLTIwMjQtMDQtMzA
+  const secret = jose.base64url.encode(text);
+  console.log({ secret });
+}
+// createSecret();
+
 async function fnEncryptJWT() {
   const secret = jose.base64url.decode(
     "zH4NRP1HMALxxCFnRZABFA7GOJtzU_gIj02alfL1lvI"
@@ -52,28 +58,42 @@ async function fnEncryptJWT() {
   console.log("jwt protectedHeader: ", protectedHeader);
   console.log("jwt payload: ", payload);
 }
-// fnCompactEncrypt();
-async function fnCompactEncrypt(jwe) {
+
+async function fnCompactEncrypt() {
   try {
-    // const sasURL =
-    //   "aHR0cHM6Ly9nZW5haXN0b3JhZ2VhY2NvdW50MDIuYmxvYi5jb3JlLndpbmRvd3MubmV0L21vYmlsZS9rYXRpZXN0ZXZlLndhdj9zcD1yJnN0PTIwMjQtMDQtMzBUMDY6NDQ6MTNaJnNlPTIwMjQtMDQtMzBUMTQ6NDQ6MTNaJnNwcj1odHRwcyZzdj0yMDIyLTExLTAyJnNyPWImc2lnPXBQVFhucTlIUXhXR2k3OFFka2xaTks5eWl0ZWVnVjlFZkZtNVI2cUpxRG8lM0Q=";
+    const sasURL =
+      "aHR0cHM6Ly9nZW5haXN0b3JhZ2VhY2NvdW50MDIuYmxvYi5jb3JlLndpbmRvd3MubmV0L21vYmlsZS9rYXRpZXN0ZXZlLndhdj9zcD1yJnN0PTIwMjQtMDQtMzBUMDY6NDQ6MTNaJnNlPTIwMjQtMDQtMzBUMTQ6NDQ6MTNaJnNwcj1odHRwcyZzdj0yMDIyLTExLTAyJnNyPWImc2lnPXBQVFhucTlIUXhXR2k3OFFka2xaTks5eWl0ZWVnVjlFZkZtNVI2cUpxRG8lM0Q=";
     const secret = jose.base64url.decode(process.env.USER_SECRET);
-    // const jwe = await new jose.CompactEncrypt(new TextEncoder().encode(sasURL))
-    //   .setProtectedHeader({ alg: "dir", enc: "A128CBC-HS256" })
-    //   .encrypt(secret);
-    // console.log({ jwe });
-    const { plaintext, protectedHeader } = await jose.compactDecrypt(
-      jwe,
-      secret
-    );
-    // console.log("jwe protectedHeader: ", protectedHeader);
-    // console.log("jwe plaintext: ", new TextDecoder().decode(plaintext));
-    return new TextDecoder().decode(plaintext);
+    const jwe = await new jose.CompactEncrypt(new TextEncoder().encode(sasURL))
+      .setProtectedHeader({ alg: "dir", enc: "A128CBC-HS256" })
+      .encrypt(secret);
+    console.log({ jwe });
+    return jwe;
   } catch (error) {
     // console.log({ error });
     throw error;
   }
 }
+// fnCompactEncrypt();
+
+const fnJweDecrypt = async (jwe) => {
+  try {
+    // const secret = jose.base64url.decode(process.env.USER_SECRET);
+    const secret = process.env.USER_SECRET;
+    const { plaintext, protectedHeader } = await jose.compactDecrypt(
+      jwe,
+      Buffer.from(secret)
+    );
+    const sas = new TextDecoder().decode(plaintext);
+    return sas;
+    // console.log({ sas });
+    // console.log({ protectedHeader });
+  } catch (error) {
+    throw error;
+    // console.log({ error });
+  }
+};
+// fnJweDecrypt("1");
 
 router.get("/createsas", (request, response) => {
   const url = "";
@@ -123,7 +143,7 @@ router.get("/blob", function (request, response) {
       return;
     }
 
-    fnCompactEncrypt(id)
+    fnJweDecrypt(id)
       .then((url) => {
         console.log({ url });
         main(url)
@@ -138,43 +158,35 @@ router.get("/blob", function (request, response) {
                 const result = "Container created. Now uploading...";
                 console.log({ result });
 
-                uploadBlob(newFileNameAndPath, containerClient).then(() => {
-                  const result = `${path.basename(
-                    newFileNameAndPath
-                  )} was uploaded successfully!`;
-                  console.log({ result });
-                  // const html = path.resolve(__dirname, "../views/success.html");
-                  // response.sendFile(html);
-                  response.render("index", {
-                    title: "Success!",
-                    message: result,
-                  });
-                  return;
-                });
+                uploadBlob(newFileNameAndPath, containerClient).then(
+                  (newFileNameAndPath) => {
+                    const result = `${path.basename(
+                      newFileNameAndPath
+                    )} was uploaded successfully!`;
+                    console.log({ result });
+
+                    deleteFile(newFileNameAndPath);
+
+                    response.render("index", {
+                      title: "Success!",
+                      message: result,
+                    });
+                    return;
+                  }
+                );
               })
               .catch((error) =>
-                // {
-                //   console.log({ error });
-                //   const html = path.resolve(__dirname, "../views/error.html");
-                //   response.sendFile(html);
-                // }
                 response.render("index", {
                   title: error.name,
                   message: error.message || error.details.errorCode,
                 })
               );
           })
-          .catch(
-            (error) =>
-              response.render("index", {
-                title: error.name,
-                message: error.message || error.details.errorCode,
-              })
-            // {
-            //   console.log({ error });
-            //   const html = path.resolve(__dirname, "../views/error.html");
-            //   response.sendFile(html);
-            // }
+          .catch((error) =>
+            response.render("index", {
+              title: error.name,
+              message: error.message || error.details.errorCode,
+            })
           );
       })
       .catch((error) => {
@@ -258,11 +270,27 @@ const createContainer = async () => {
 };
 
 async function uploadBlob(newFileNameAndPath, containerClient) {
-  const blobName = path.basename(newFileNameAndPath);
-  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-  await blockBlobClient.uploadFile(newFileNameAndPath.replaceAll("\\", "/"));
+  try {
+    const blobName = path.basename(newFileNameAndPath);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+    const result = await blockBlobClient.uploadFile(
+      newFileNameAndPath.replaceAll("\\", "/")
+    );
+    if (result) return newFileNameAndPath;
+    else return false;
+  } catch (error) {
+    throw error;
+  }
 }
+
+const deleteFile = (filePath) => {
+  try {
+    const result = fileSys.unlinkSync(filePath);
+    console.log("File deleted successfully.");
+  } catch (err) {
+    console.error("Error deleting file:", err);
+  }
+};
 
 // creatTable();
 
