@@ -296,20 +296,4 @@ const getData = () => {
   }
 };
 
-// const jwe =
-//   "eyJlbmMiOiJBMTI4R0NNIiwiYWxnIjoiQTEyOEtXIn0.lXpcmOTNNkrL6k211JmDYpb99FxGO0WX.58Uv7e7TDbGXqnyY.ClLFNh6PG0-c6SHflut_XfvBRqc_dzkum3xYDPjNZi0kxOWrE51a_pkfWurPr8ztUki1FD-YJfy6NTtleyt8-FSmKbW5toRF0CIZ1KFCZ2o0ruhglOL0l1BDz-7y_EeE1AR28cawSn5TuXOasgmW6RhqEhTO5eBTAEbfSlJuuTQxqbsaUAXF95pKm79htErjS2QtfayToqNqp0NmdN0yI3tK4UThn3NnifA25eKXzulhR1Hv36rf1wkAfXN2HaDPzF4kXgLRb4ClpPW0GMzSI94udZD8DiBTmVF1VycHVyhxJrlTxBC9syQpHfkkyVRcl77akJbgBpKXiS8Knb513VI1qiqlxjTdLCz_6ECFyN4NLqGfUubO5VWiFe16Cutf99IetgWOnt0ygzcntJZav3DvvgN-i6Iyi8h3zAIcUPHJ4KRdwR6Tu6-CORuXkgpRz0b29X3KiXwyBXlxxc_pay6kWyIxNYz1hTUZp7qrDjGsBBJS5WuR5A2ARGWVa0tdmJRBpKPhxrqDtQN9ZM04MqdjJxyJLz3Oy8pp13MKA0Z4YxCvInbrpl0gAz9RtbpqR8n_0ZqbOdYXE6Y7GwCy-8HG1LHh_8L8MXT9JAfGrJIm8H_fOQ.P3KfPZPFDsnVOQp3A8CrJA";
-// fnJweDecrypt(jwe)
-//   .then((jwt) => {
-//     verifyAndDecodeJwt(jwt)
-//       .then((sasURL) => {
-//         console.log({ sasURL });
-//       })
-//       .catch((error) => {
-//         console.log({ error });
-//       });
-//   })
-//   .catch((error) => {
-//     console.log({ error });
-//   });
-
 module.exports = router;
