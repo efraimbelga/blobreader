@@ -22,78 +22,48 @@ const sqlite = require("sqlite3");
 // });
 const jose = require("jose");
 
-function createSecret() {
-  const text = "@gsk-genai-mobile-aws-2024-04-30";
-  //QGdzay1nZW5haS1tb2JpbGUtYXdzLTIwMjQtMDQtMzA
-  const secret = jose.base64url.encode(text);
-  console.log({ secret });
-}
-// createSecret();
-
-async function fnEncryptJWT() {
-  const secret = jose.base64url.decode(
-    "zH4NRP1HMALxxCFnRZABFA7GOJtzU_gIj02alfL1lvI"
-  );
-  const payloadVal = {
-    sas: "aHR0cHM6Ly9nZW5haXN0b3JhZ2VhY2NvdW50MDIuYmxvYi5jb3JlLndpbmRvd3MubmV0L21vYmlsZS9rYXRpZXN0ZXZlLndhdj9zcD1yJnN0PTIwMjQtMDQtMzBUMDM6NTI6MjlaJnNlPTIwMjQtMDQtMzBUMTE6NTI6MjlaJnNwcj1odHRwcyZzdj0yMDIyLTExLTAyJnNyPWImc2lnPXJlQml2dTZ2SEU1c1FTQ0swV1E4U3EyWmpMJTJGeUdsY1pWMiUyQjhyOElpUHg0JTNE",
-  };
-  const jwt = await new jose.EncryptJWT(payloadVal)
-    .setProtectedHeader({ alg: "dir", enc: "A128CBC-HS256" })
-    // .setIssuedAt()
-    // .setIssuer("urn:example:issuer")
-    // .setAudience("urn:example:audience")
-    // .setExpirationTime("2h")
-    .encrypt(secret);
-  console.log({ jwt });
-
-  const { payload, protectedHeader } = await jose.jwtDecrypt(
-    jwt,
-    secret
-    // {
-    // issuer: "urn:example:issuer",
-    // audience: "urn:example:audience",
-    // }
-  );
-
-  console.log("jwt protectedHeader: ", protectedHeader);
-  console.log("jwt payload: ", payload);
-}
-
-async function fnCompactEncrypt() {
-  try {
-    const sasURL =
-      "aHR0cHM6Ly9nZW5haXN0b3JhZ2VhY2NvdW50MDIuYmxvYi5jb3JlLndpbmRvd3MubmV0L21vYmlsZS9rYXRpZXN0ZXZlLndhdj9zcD1yJnN0PTIwMjQtMDQtMzBUMDY6NDQ6MTNaJnNlPTIwMjQtMDQtMzBUMTQ6NDQ6MTNaJnNwcj1odHRwcyZzdj0yMDIyLTExLTAyJnNyPWImc2lnPXBQVFhucTlIUXhXR2k3OFFka2xaTks5eWl0ZWVnVjlFZkZtNVI2cUpxRG8lM0Q=";
-    const secret = jose.base64url.decode(process.env.USER_SECRET);
-    const jwe = await new jose.CompactEncrypt(new TextEncoder().encode(sasURL))
-      .setProtectedHeader({ alg: "dir", enc: "A128CBC-HS256" })
-      .encrypt(secret);
-    console.log({ jwe });
-    return jwe;
-  } catch (error) {
-    // console.log({ error });
-    throw error;
-  }
-}
-// fnCompactEncrypt();
-
 const fnJweDecrypt = async (jwe) => {
   try {
-    // const secret = jose.base64url.decode(process.env.USER_SECRET);
-    const secret = process.env.USER_SECRET;
-    const { plaintext, protectedHeader } = await jose.compactDecrypt(
-      jwe,
-      Buffer.from(secret)
-    );
-    const sas = new TextDecoder().decode(plaintext);
-    return sas;
-    // console.log({ sas });
-    // console.log({ protectedHeader });
+    const secretKey = process.env.USER_SECRET;
+    // Import the secret key as JWK
+    const jwk = await jose.importJWK({
+      kty: "oct",
+      k: secretKey,
+      // alg: "A128KW",
+    });
+
+    const { plaintext, protectedHeader } = await jose.compactDecrypt(jwe, jwk);
+
+    // Convert the Uint8Array plaintext to a string
+    const decryptedPayload = new TextDecoder().decode(plaintext);
+    // console.log("Protected Header:", protectedHeader);
+    // console.log("Decrypted Payload:", decryptedPayload);
+
+    return decryptedPayload;
   } catch (error) {
     throw error;
     // console.log({ error });
   }
 };
-// fnJweDecrypt("1");
+
+const verifyAndDecodeJwt = async (jwt) => {
+  try {
+    const secretKey = process.env.USER_SECRET;
+    // Import the secret key as JWK
+    const jwk = await jose.importJWK({
+      kty: "oct",
+      k: secretKey,
+      // alg: "HS256",
+    });
+
+    const { payload, protectedHeader } = await jose.jwtVerify(jwt, jwk);
+    // console.log("Protected Header:", protectedHeader);
+    // console.log("Decoded Payload:", payload);
+    return payload.sasURL;
+  } catch (error) {
+    throw error;
+  }
+};
 
 router.get("/createsas", (request, response) => {
   const url = "";
@@ -102,8 +72,6 @@ router.get("/createsas", (request, response) => {
 });
 
 router.get("/login", (request, response) => {
-  // const html = path.resolve(__dirname, "../views/loginform.html");
-  // response.sendFile(html);
   const { error } = request.query;
   response.render("login", { error });
 });
@@ -132,8 +100,6 @@ router.post("/login", function (req, res) {
   res.redirect(`/api/blob?${params}`);
 });
 
-// fnEncryptJWT();
-// fnCompactEncrypt();
 router.get("/blob", function (request, response) {
   const { id } = request.query;
   if (id) {
@@ -142,38 +108,46 @@ router.get("/blob", function (request, response) {
       response.redirect(`/api/login?id=${id}`);
       return;
     }
-
-    fnJweDecrypt(id)
-      .then((url) => {
-        console.log({ url });
-        main(url)
-          .then((newFileNameAndPath) => {
-            const result = `Donwloaded successfully! Creating container...`;
-            console.log({ result });
-            return newFileNameAndPath;
-          })
-          .then((newFileNameAndPath) => {
-            createContainer()
-              .then((containerClient) => {
-                const result = "Container created. Now uploading...";
+    const jwe = id;
+    fnJweDecrypt(jwe)
+      .then((jwt) => {
+        verifyAndDecodeJwt(jwt)
+          .then((sasURL) => {
+            main(sasURL)
+              .then((newFileNameAndPath) => {
+                const result = `Donwloaded successfully! Creating container...`;
                 console.log({ result });
-
-                uploadBlob(newFileNameAndPath, containerClient).then(
-                  (newFileNameAndPath) => {
-                    const result = `${path.basename(
-                      newFileNameAndPath
-                    )} was uploaded successfully!`;
+                return newFileNameAndPath;
+              })
+              .then((newFileNameAndPath) => {
+                createContainer()
+                  .then((containerClient) => {
+                    const result = "Container created. Now uploading...";
                     console.log({ result });
 
-                    deleteFile(newFileNameAndPath);
+                    uploadBlob(newFileNameAndPath, containerClient).then(
+                      (newFileNameAndPath) => {
+                        const result = `${path.basename(
+                          newFileNameAndPath
+                        )} was uploaded successfully!`;
+                        console.log({ result });
 
+                        deleteFile(newFileNameAndPath);
+
+                        response.render("index", {
+                          title: "Success!",
+                          message: result,
+                        });
+                        return;
+                      }
+                    );
+                  })
+                  .catch((error) =>
                     response.render("index", {
-                      title: "Success!",
-                      message: result,
-                    });
-                    return;
-                  }
-                );
+                      title: error.name,
+                      message: error.message || error.details.errorCode,
+                    })
+                  );
               })
               .catch((error) =>
                 response.render("index", {
@@ -182,12 +156,9 @@ router.get("/blob", function (request, response) {
                 })
               );
           })
-          .catch((error) =>
-            response.render("index", {
-              title: error.name,
-              message: error.message || error.details.errorCode,
-            })
-          );
+          .catch((error) => {
+            console.log({ error });
+          });
       })
       .catch((error) => {
         console.log({ error });
@@ -324,5 +295,21 @@ const getData = () => {
     console.log(e);
   }
 };
+
+// const jwe =
+//   "eyJlbmMiOiJBMTI4R0NNIiwiYWxnIjoiQTEyOEtXIn0.lXpcmOTNNkrL6k211JmDYpb99FxGO0WX.58Uv7e7TDbGXqnyY.ClLFNh6PG0-c6SHflut_XfvBRqc_dzkum3xYDPjNZi0kxOWrE51a_pkfWurPr8ztUki1FD-YJfy6NTtleyt8-FSmKbW5toRF0CIZ1KFCZ2o0ruhglOL0l1BDz-7y_EeE1AR28cawSn5TuXOasgmW6RhqEhTO5eBTAEbfSlJuuTQxqbsaUAXF95pKm79htErjS2QtfayToqNqp0NmdN0yI3tK4UThn3NnifA25eKXzulhR1Hv36rf1wkAfXN2HaDPzF4kXgLRb4ClpPW0GMzSI94udZD8DiBTmVF1VycHVyhxJrlTxBC9syQpHfkkyVRcl77akJbgBpKXiS8Knb513VI1qiqlxjTdLCz_6ECFyN4NLqGfUubO5VWiFe16Cutf99IetgWOnt0ygzcntJZav3DvvgN-i6Iyi8h3zAIcUPHJ4KRdwR6Tu6-CORuXkgpRz0b29X3KiXwyBXlxxc_pay6kWyIxNYz1hTUZp7qrDjGsBBJS5WuR5A2ARGWVa0tdmJRBpKPhxrqDtQN9ZM04MqdjJxyJLz3Oy8pp13MKA0Z4YxCvInbrpl0gAz9RtbpqR8n_0ZqbOdYXE6Y7GwCy-8HG1LHh_8L8MXT9JAfGrJIm8H_fOQ.P3KfPZPFDsnVOQp3A8CrJA";
+// fnJweDecrypt(jwe)
+//   .then((jwt) => {
+//     verifyAndDecodeJwt(jwt)
+//       .then((sasURL) => {
+//         console.log({ sasURL });
+//       })
+//       .catch((error) => {
+//         console.log({ error });
+//       });
+//   })
+//   .catch((error) => {
+//     console.log({ error });
+//   });
 
 module.exports = router;
