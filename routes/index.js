@@ -127,8 +127,8 @@ router.get("/blob", function (request, response) {
                     const result = "Container created. Now uploading...";
                     console.log({ result });
 
-                    uploadBlob(newFileNameAndPath, containerClient).then(
-                      (newFileNameAndPath) => {
+                    uploadBlob(newFileNameAndPath, containerClient)
+                      .then((newFileNameAndPath) => {
                         const result = `${path.basename(
                           newFileNameAndPath
                         )} was uploaded successfully!`;
@@ -140,9 +140,14 @@ router.get("/blob", function (request, response) {
                           title: "Success!",
                           message: result,
                         });
-                        return;
-                      }
-                    );
+                        // return;
+                      })
+                      .catch((error) =>
+                        response.render("index", {
+                          title: error.name,
+                          message: error.message || error.details.errorCode,
+                        })
+                      );
                   })
                   .catch((error) =>
                     response.render("index", {
@@ -159,7 +164,11 @@ router.get("/blob", function (request, response) {
               );
           })
           .catch((error) => {
-            console.log({ error });
+            // console.log({ error });
+            response.render("index", {
+              title: error.name,
+              message: error.message || error.details.errorCode,
+            });
           });
       })
       .catch((error) => {
