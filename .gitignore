@@ -3,3 +3,4 @@ downloads
 downloads/*
 .env
 .github/*
+prisma/dev.db

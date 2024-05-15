@@ -21,6 +21,8 @@ const sqlite = require("sqlite3");
 //   if (err) console.log(err);
 // });
 const jose = require("jose");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 const fnJweDecrypt = async (jwe) => {
   try {
@@ -263,37 +265,57 @@ const deleteFile = (filePath) => {
   }
 };
 
-// creatTable();
-
-const creatTable = () => {
-  const sql =
-    "CREATE TABLE IF NOT EXISTS audio(ID INTEGER PRIMARY KEY, filename, filetype)";
-  db.run(sql);
-};
-
-const insertData = (filename, contentType) => {
+const insertData = async (filename, contentType) => {
   try {
-    const sql = "INSERT INTO audio(filename, filetype) VALUES(?,?)";
-    db.run(sql, [filename, contentType], (error) => {
-      error ? console.log(error) : console.log("Insert success");
+    await prisma.user.create({
+      data: {
+        name: "JOhn",
+        email: "efraimbelga@prisma.io",
+      },
     });
   } catch (e) {
     console.log(e);
   }
 };
 
-const getData = () => {
+const getData = async () => {
   try {
-    const sql = "SELECT * FROM audio";
-    db.all(sql, [], (err, rows) => {
-      if (err) throw new Error(err);
-      rows.forEach((row) => {
-        console.log("Audio data: ", row);
-      });
+    const users = await prisma.user.findMany({
+      // where: {
+      //   email: "efraimbelga@prisma.io",
+      // },
     });
-  } catch (e) {
-    console.log(e);
+    console.log(users);
+    // By unique identifier
+    // const user = await prisma.user.findUnique({
+    //   where: {
+    //     email: "efraimbelga@prisma.io",
+    //   },
+    // });
+  } catch (error) {
+    console.log({ error });
   }
 };
 
+const deleteData = async () => {
+  try {
+    await prisma.user.delete({
+      where: {
+        email: "efraim@prisma.io",
+      },
+    });
+    // await prisma.user.deleteMany({
+    //   where: {
+    //     email: {
+    //       contains: 'prisma.io',
+    //     },
+    //   },
+    // })
+  } catch (err) {
+    console.log({ err });
+  }
+};
+// insertData();
+// deleteData();
+// getData();
 module.exports = router;
