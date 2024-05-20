@@ -1,0 +1,1 @@
+window.__remixManifest={"entry":{"module":"/build/entry.client-EOZPWMOK.js","imports":["/build/_shared/chunk-Q3IECNXJ.js"]},"routes":{"root":{"id":"root","path":"","module":"/build/root-KOIWFVIC.js","hasAction":false,"hasLoader":false,"hasClientAction":false,"hasClientLoader":false,"hasErrorBoundary":false}},"version":"34cf3b0d","url":"/build/manifest-34CF3B0D.js"};
