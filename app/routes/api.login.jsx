@@ -1,7 +1,7 @@
 import { redirect } from "@remix-run/node";
 import React from "react";
 import logo from "../images/gsk-logo.png";
-import { commitSession, getSession } from "../sessions";
+import { commitSession, getSession } from "../.server/sessions";
 
 export const loader = async ({ request }) => {
   const session = await getSession(request.headers.get("cookie"));
