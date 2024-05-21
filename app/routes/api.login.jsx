@@ -1,7 +1,7 @@
+import { redirect } from "@remix-run/node";
 import React from "react";
-import { createCookieSessionStorage, json, redirect } from "@remix-run/node";
-import { commitSession, getSession } from "../sessions";
 import logo from "../images/gsk-logo.png";
+import { commitSession, getSession } from "../sessions";
 
 export const loader = async ({ request }) => {
   const session = await getSession(request.headers.get("cookie"));
@@ -20,10 +20,6 @@ export const action = async ({ request }) => {
       "Set-Cookie": await commitSession(session),
     },
   });
-
-  // const session = await storage.getSession();
-  // session.set("firstName", "Efraim");
-  // const commit = await storage.commitSession(session);
 };
 
 const login = () => {
