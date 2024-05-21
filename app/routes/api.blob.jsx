@@ -6,15 +6,10 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import React from "react";
-import {
-  uploadBlob,
-  donwloadToTemp,
-  fnJweDecrypt,
-  fnJwtVerify,
-} from "../lib/api.server";
 
-import { commitSession, getSession } from "../sessions";
+import { commitSession, getSession } from "../.server/sessions";
 import { redirect } from "@remix-run/node";
+import { donwloadToTemp, fnJweDecrypt, fnJwtVerify } from "../.server/api";
 
 export async function loader({ request }) {
   try {
