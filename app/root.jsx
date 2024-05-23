@@ -1,4 +1,10 @@
-import { Links, Meta, Outlet, Scripts } from "@remix-run/react";
+import {
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+} from "@remix-run/react";
 import stylesheet from "./tailwind.css?url";
 import "bootstrap/dist/css/bootstrap.css";
 export const links = () => [{ rel: "stylesheet", href: stylesheet }];
@@ -14,6 +20,7 @@ export default function App() {
       </head>
       <body>
         <Outlet />
+        <ScrollRestoration />
         <Scripts />
       </body>
     </html>
