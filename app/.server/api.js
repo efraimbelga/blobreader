@@ -78,6 +78,7 @@ export const donwloadToTemp = async (encSAS) => {
     fs.mkdirSync(downloadsPath);
   }
   const tempPath = path.join(downloadsPath, filename);
+
   await blobClient.downloadToFile(tempPath);
   console.log(tempPath + " created");
   return tempPath;

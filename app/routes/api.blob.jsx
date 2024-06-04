@@ -9,7 +9,12 @@ import React from "react";
 
 import { commitSession, getSession } from "../.server/sessions";
 import { redirect } from "@remix-run/node";
-import { donwloadToTemp, fnJweDecrypt, fnJwtVerify } from "../.server/api";
+import {
+  donwloadToTemp,
+  fnJweDecrypt,
+  fnJwtVerify,
+  uploadBlob,
+} from "../.server/api";
 
 export async function loader({ request }) {
   try {
